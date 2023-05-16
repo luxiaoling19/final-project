@@ -118,6 +118,7 @@ short_name <- c("IAC", "SCC", "ASC", "PPC", "LCNEC", "LCC", "combined", "Collisi
 subtype <- c("Invasive adenocarcinoma","Squamous cell carcinoma","Adenosquamous carcinoma",
              "Pleomorphic carcinoma","LCNEC","Large cell carcinoma","combined LUAD and LCNEC",
              "Collision LUAD and LUSC","Carcinosarcoma")
+library(dndscv)
 
 dndsout_list <- list()
 for (i in 1:length(subtype)){
