@@ -39,24 +39,16 @@ signature_weights_clonalMuts_perTumour <- signature_weights[["signature_weights_
 signature_weights_subclonalMuts_perTumour <- signature_weights[["signature_weights_subclonalMuts_perTumour"]]
 signature_weights_privateMuts_perTumour <- signature_weights[["signature_weights_privateMuts_perTumour"]]
 
-#获取每列>0的数量
-number <- c("1","2","4","5","13","92","44")
-for (i in number){
-  col <- paste0("SBS", i)
-  col_values <- get(col, signature_weights_perTumour)
-  count_positive <- sum(col_values > 0)
-  print(count_positive)
-}
-
 #(2)
 ############ signature weights group tumour_id ################
 
 number <- c(1, 2, 4, 5, 13, 92, 44)
 
+#define signature weights<0.1 as undetected
 SBS_list <- list()
 for (i in number) {
   col <- paste0("SBS", i)
-  filter_table <- signature_weights_perTumour[[col]] > 0
+  filter_table <- signature_weights_perTumour[[col]] > 0.1
   table <- subset(signature_weights_perTumour, filter_table, select = c("tumour_id"))
   SBS_list[[col]] <- table
 }
@@ -96,7 +88,7 @@ for (i in name) {
   table <- paste0("dndsout_SBS", i) 
   dndsout_SBSi <- get(table)
   sel_cv_subtype <- dndsout_SBSi$sel_cv
-  signature_driver_q0.1_list[[i]] <- sel_cv_subtype[sel_cv_subtype$qglobal_cv < 0.01, c("gene_name", "qglobal_cv")]
+  signature_driver_q0.1_list[[i]] <- sel_cv_subtype[sel_cv_subtype$qglobal_cv < 0.1, c("gene_name", "qglobal_cv")]
 }
 
 for (i in name) {
