@@ -52,9 +52,6 @@ ggplot(data = patient_by_subtype,
   theme(axis.text.x = element_text(angle = 45, 
                                    hjust = 1), 
         legend.position = 'none')
-
-#subtype <- c("Invasive adenocarcinoma","Squamous cell carcinoma","Adenosquamous carcinoma", "Pleomorphic carcinoma","LCNEC","Large cell carcinoma","combined LUAD and LCNEC", "Collision LUAD and LUSC","Carcinosarcoma")
-
 ##############################################################################
 
 
@@ -62,8 +59,6 @@ ggplot(data = patient_by_subtype,
 #3 group patients by LUAD, LUSC, other types
 ###################################################################################
 ################### data group by histological subtype ############################
-
-
 ##(1)
 ### turn into function()
 generate_histological_group <- function(tumortype){
@@ -91,7 +86,6 @@ table <- generate_histological_group(other_subtypes)
 histological_mutation_list[["Other subtypes"]] <- table
 
 head(histological_mutation_list)
-
 #############################################################################
 
 
@@ -101,7 +95,6 @@ head(histological_mutation_list)
 ###################################################################################
 ################### make mutation tables grouped by tumor type ##################
 
-
 ######### LOOP to merge all subtype tables with corresponding mutations
 for (i in 1:length(histological_mutation_list)) {
   table <- histological_mutation_list[[i]]
@@ -110,16 +103,7 @@ for (i in 1:length(histological_mutation_list)) {
 }
 
 head(histological_mutation_list)
-
 ##################################################################################
-
-
-
-############# remove data and values do not need ###############################
-# objects_to_remove <- c("patient_by_subtype","merged_table","x","i","table","mutation","tumor_df","subtype")
-# rm(list = objects_to_remove, envir = .GlobalEnv)
-# ls()
-
 
 
 #5
@@ -134,35 +118,27 @@ for (i in 1:length(subtype)){
   dndsout_list[[i]] <- assign(paste0("dndsout_", subtype[i]), list, envir = .GlobalEnv)
 }  
 
-
-####################### LOOP to get output #########################
-
 #(1) 
-############# output significant genes 输出显著性基因 ##############
-#LOOP to get significant genes for every subtype
+############# output significant genes ##############
 
 histological_driver_q0.1_list <- list()
 for (i in subtype ) {
-  print(i)
-  print("significant genes")
   table <- paste0("dndsout_", i) 
   dndsout_subtype <- get(table)
   sel_cv_subtype <- dndsout_subtype$sel_cv
   histological_driver_q0.1_list[[i]] <- sel_cv_subtype[sel_cv_subtype$qglobal_cv < 0.1, c("gene_name", "qglobal_cv")]
 }  
 
-#save driver genes to excel document
+#save driver genes to Excel
 library(writexl)
 folder_path <- "D:/Program Files/R/final project"
-# 确保文件夹存在，如果不存在则创建
 #dir.create(folder_path, showWarnings = FALSE)
-excel_file <- file.path(folder_path, "histological_driver_q0.1_list.xlsx")
+excel_file <- file.path(folder_path, "histological_driver.xlsx")
 write_xlsx(histological_driver_q0.1_list, excel_file)
 
 
 #(2) 
-########## 输出全局dN/dS Global dN/dS estimates [写作globaldnds] ############
-#LOOP to get Global dN/dS for every subtype
+########## dN/dS Global dN/dS estimates [写作globaldnds] ############
 for (i in subtype) {
   print(i)
   print("Global dN/dS")
@@ -174,22 +150,18 @@ for (i in subtype) {
 
 #(3)
 ######## other outputs ########
-head(dndsout_ASC$annotmuts)
-# 【annotmuts】an annotated table of coding mutations编码突变的注释表 
-# 【mle_submodel】MLEs of mutation rate parameters突变率参数的最大似然估计 
-# 【genemuts】 a table with the observed expected number of mutations per gene 每个基因观察到的和预期的突变数量表
+# 【annotmuts】an annotated table of coding mutations
+# 【mle_submodel】MLEs of mutation rate parameters
+# 【genemuts】 a table with the observed expected number of mutations per gene
 annotmuts_list <-  list()
 for (i in subtype) {
-  print(i)
-  print("annotated table of coding mutations")
   table <- paste0("dndsout_", i) 
   dndsout_subtype <- get(table)  
   annotmuts_list[[table]] <- dndsout_subtype$annotmuts
 }
+
 observed_expected_number_of_mutations <- list()
 for (i in subtype) {
-  print(i)
-  print("a table with the observed expected number of mutations per gene")
   table <- paste0("dndsout_", i) 
   dndsout_subtype <- get(table)  
   observed_expected_number_of_mutations[[table]] <- dndsout_subtype$genemuts
@@ -197,7 +169,6 @@ for (i in subtype) {
 
 #(4)
 ######### theta/θ value to test suitability for dNdScv #######
-#LOOP to get theta value for every subtype
 for (i in subtype) {
   print(i)
   print("theta value")
