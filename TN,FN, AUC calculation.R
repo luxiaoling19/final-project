@@ -8,20 +8,24 @@ library(dndscv)
 library(readxl)
 all_mutated_genes <- read_excel("all mutated genes.xlsx")
 
+########################### get baseline negatives ##########################
+########### exclude genes that not appear in all_mutated_genes from all_known_drivers
 result <- summary_All_known_drivers_1042_genes$gene_name %in% all_mutated_genes$gene_name
 summary_All_known_drivers_TF <-  cbind(summary_All_known_drivers_1042_genes[, 1],result)
 
 summary_All_known_drivers_Compatible <- summary_All_known_drivers_TF[grepl("T",summary_All_known_drivers_TF$"result5"),]
 summary_All_known_drivers_Compatible <- summary_All_known_drivers_Compatible[,1]
 
+################ all mutated genes subtract known drivers as true negatives
 total_non_driver <- setdiff(all_mutated_genes, summary_All_known_drivers_Compatible)
 total_non_driver <- total_non_driver[!grepl("CDKN2A.p14arf|CDKN2A.p16INK4a",total_non_driver$gene_name),]
 
+
+################## number of TN,FN ################################
 colnames(major_SBS)[1] <- "gene_name"
 majorSBS_non_driver <- setdiff(all_mutated_genes, major_SBS)
 colnames(histology)[1] <- "gene_name"
 histology_non_driver <- setdiff(all_mutated_genes, histology)
-
 
 result <- majorSBS_non_driver$gene_name %in% total_non_driver$gene_name
 table(result)
