@@ -17,10 +17,6 @@ colnames(mutation) = gsub('start', 'pos', colnames(mutation))
 ###### !!! to make chr readable for dndscvpackage(chr column only number)
 mutation$chr = gsub("chr","",as.vector(mutation$chr))
 head(mutation)
-# tumour_id  chr      pos ref var
-#1  CRUK0005 19 34291428   G   T
-#2  CRUK0005 19  9084770   C   A
-#3  CRUK0005  1  2160418   G   T
 rm(mut_table)
 ################################################################################
 
@@ -69,14 +65,12 @@ for (i in subtype){
   max_weights_sig_list[[SBSi]] <- max_weights_tumour_id
 }
 
-
 for (i in 1:length(subtype)) {
   SBSi <- paste0("SBS", subtype[i])
   table <- max_weights_sig_list[[SBSi]]
   merged_table <- merge(mutation, table, by = "tumour_id")
   max_weights_sig_list[[SBSi]] <- merged_table
 }
-
 
 head(max_weights_sig_list)
 ######################################################################################
@@ -108,17 +102,6 @@ for (i in subtype) {
   sel_cv_SBSi <- dndsout_SBSi$sel_cv
   print(sel_cv_SBSi[sel_cv_SBSi$qglobal_cv < 0.1, c("gene_name", "qglobal_cv")])
 }
-
-for (i in subtype) {
-  print(i)
-  print("significant genes")
-  table <- paste0("dndsout_SBS", i) 
-  dndsout_SBSi <- get(table)
-  sel_cv_SBSi <- dndsout_SBSi$sel_cv
-  print(head(sel_cv_SBSi), digits = 3) 
-  print(sel_cv_subtype[sel_cv_SBSi$qglobal_cv < 0.1, c("gene_name", "qglobal_cv")], digits = 3)
-}  
-
 
 
 #(2) 
@@ -159,10 +142,9 @@ for (i in subtype) {
 
 
 ######## other outputs ########
-head(dndsout_ASC$annotmuts)
-# 【annotmuts】an annotated table of coding mutations编码突变的注释表 
-# 【mle_submodel】MLEs of mutation rate parameters突变率参数的最大似然估计 
-# 【genemuts】 a table with the observed expected number of mutations per gene 每个基因观察到的和预期的突变数量表
+# 【annotmuts】an annotated table of coding mutations
+# 【mle_submodel】MLEs of mutation rate parameters
+# 【genemuts】 a table with the observed expected number of mutations per gene
 annotmuts_major_weights <- list()
 for (i in subtype) {
   print(i)
