@@ -25,10 +25,6 @@ mingenecovs = 500
 
 
 # Functions -------------------------------------------------------------------
-# All this functions originally were written inside dnsdcv function. Yes, you 
-# can write a function inside the function. But IT IS REALLY BAD PRACTICE!!!
-# DO NOT DO THAT! Therefore, I moved them here, separetly as all little good
-# functions should be
 
 chr2cds <-  function(pos, cds_int, strand) {
   if (strand == 1) {
@@ -492,6 +488,8 @@ if (any(nrow(indels))) {
 }
 annot = annot[order(annot$sampleID, annot$chr, annot$pos), ]
 
+########################### Modification section ##############################
+                                         
 # [STEP 1] Convert signatures profiles to 192 format --------------------------
 # Data table signature_profiles was read from the file SBS_GRCh37.txt and 
 # contains standard profiles of all signatures. This data table has 96 rows 
@@ -506,8 +504,6 @@ annot = annot[order(annot$sampleID, annot$chr, annot$pos), ]
 # trinucleotides on reverse strand). 
 
 # s_1A: convert column Type to the dNdScv format. 
-# Tip: used function substr and paste
-# ... insert your code here ...
 # Assuming SBS_GRCh37 is a data.table
 signature_profiles <- as.data.table(signature_profiles)
 signature_profiles <- rbind(signature_profiles, signature_profiles)  #192 ROWS
@@ -528,8 +524,7 @@ colnames(signature_profiles)[1] <- "codon_change"
 # trinucleotides on reverse strand).
 # Tip: to perform reverse compliment operation on trinucleotides, create 2 
 # columns named ref3_cod and mut3_cod which will contain reference and mutated
-# codon respectively. Use DNAString and reverseComplement functions from 
-# Biostrings package to perform reverse compliment operation.
+# codon respectively.
 # !! Tip: make an assumption that strands contribute equally to signature profile
 
 signature_profiles$ref3_cod <- substr(signature_profiles$codon_change,1,3)
@@ -552,8 +547,6 @@ signature_profiles$codon_change <- paste0(signature_profiles$ref3_cod_strand,
 numeric_cols <- names(signature_profiles)[sapply(signature_profiles, is.numeric)]
 signature_profiles[, (numeric_cols) := lapply(.SD, function(x) x / 2), .SDcols = numeric_cols]
 
-# put the data table which you created in this section under name 
-# signature_profiles_192
 signature_profiles_192 <- signature_profiles
 
 # [STEP 2]: Calculate distribution of mutations over 3nucl. context expected to be produced by signatures ----
@@ -562,8 +555,8 @@ signature_profiles_192 <- signature_profiles
 # signature weights by signature profiles
 
 # s_2A: select from signature_profiles_192 signatures which are active in at least 1 patient.
-
-#signature_weights should remove CRUK0418 first
+# signature_weights should remove CRUK0418 first(for his extremely high TMB)
+                                              
 signature_weights <- signature_weights[sampleID != "CRUK0418"]
 
 weight_column_names <- colnames(signature_weights)[-1]
@@ -615,7 +608,6 @@ colnames(per_patient_trinucl_weigths)[1] <- "sampleID"
 per_patient_trinucl_weigths <- per_patient_trinucl_weigths[, c("sampleID", names(trinucsubsind)), with = FALSE]
 
 
-
 # [STEP 3] create patient - specific N matrix ---------------------------------
 # Reminder: in the classic version of dNdScv N matrix has 192 rows corresponding
 # to the all possible 192 trinucleotide changes and 4 columns. Each column 
@@ -629,10 +621,12 @@ per_patient_trinucl_weigths <- per_patient_trinucl_weigths[, c("sampleID", names
 # s_3A: extract columns sampleID, ref3_cod, mut3_cod and impact from mutations
 # table and put it to the table named N_by_sampleID.
 N_by_sampleID <- mutations[,c("sampleID", "ref3_cod", "mut3_cod","impact")]
+                                              
 # s_3B: in the table N_by_sampleID create a new column named codon_change which
 # will hold a codon change code in dNdScv format (i.e. ACT>AAT). Use columns
 # ref3_cod and mut3_cod to do so
 N_by_sampleID$codon_change <- paste0(N_by_sampleID$ref3_cod,">",N_by_sampleID$mut3_cod)
+                                              
 # s_3C: remove from N_by_sampleID mutation which impact is not one of 
 # Synonymous, Missense, Nonsense or Essential_Splice
 N_by_sampleID <- N_by_sampleID[grepl("Synonymous|Missense|Nonsense|Essential_Splice", 
@@ -667,18 +661,15 @@ N_by_sampleID_count <- N_by_sampleID[,.N,by=c("sampleID","codon_change",
 #        CRUK0001      AAA>AGA          1 NA NA NA
 #        CRUK0001      AAA>ATA          NA  2 NA NA
 # replace NA with 0
-#dcast()
 N_by_sampleID_count <- dcast(N_by_sampleID_count, 
                              sampleID + codon_change ~ impact_code, 
                              value.var = "N", fill = 0)
-
 
 # s_3G: split table into list of tables by sampleID
 N_by_sampleID_list <- split(N_by_sampleID_count,by="sampleID")
 # s_3H: sort each table in a way that the order of trinucleotide changes in
 # them are the same as in the names of trinucsubsind vector. trinucsubsind is
 # already defined.
-
 N_by_sampleID_list <- lapply(N_by_sampleID_list, function(table) {
   table <- table[match(names(trinucsubsind), table$codon_change), ]
   #table$codon_change <- names(trinucsubsind)
@@ -693,7 +684,6 @@ N_by_sampleID_list <- lapply(N_by_sampleID_list, function(table) {
 #        [3,]    0    2    0    0
 #        [4,]    0    0    0    0
 # not all rows are printed 
-
 N_by_sampleID_matrix <- lapply(N_by_sampleID_list, function(table) {
   table <- table[, !c("sampleID","codon_change")]
   table[is.na(table)] <- 0
@@ -704,16 +694,13 @@ N_by_sampleID_matrix <- lapply(N_by_sampleID_list, function(table) {
 # by the end of this section you should have a list named N_by_sampleID with
 # 431 elements, where each element is a mtrix 192x4.
 
-####################### same result above
+                                              
 # [STEP 4] Modification of fit_substmodel function ----------------------------
 # modify the template function below so that it takes one more additional 
 # argument which should be named signatureW. This argument will be a vector of
 # length 192 and will contain distribution of mutations' proportions over 
 # trinucleotide context expected to be produced by signatures (see step 2).
-# Think, if this vector needed to be modified? I.e. if we should submit here
-# the original vector or maybe modify it somehow before?
-# Check out documentation to function glm to see how weights can be
-# incorporated
+
 signatureW_matrix <- as.matrix(per_patient_trinucl_weigths[,-1])
 rownames(signatureW_matrix) <- per_patient_trinucl_weigths$sampleID
 signatureW_matrix <- apply(signatureW_matrix, MARGIN = 1, function(row) {
@@ -743,7 +730,7 @@ signatureW_matrix <- lapply(signatureW_matrix, function(table) {
   return(table_matrix)
 })
 
-
+# modify model selection function                                             
 fit_substmodel_with_signatures = function(N, L, substmodel,signatureW) {
   l = c(L)
   n = c(N)
@@ -769,6 +756,7 @@ fit_substmodel_with_signatures = function(N, L, substmodel,signatureW) {
   return(list(par = par, model = model))
 }
 
+                                              
 # [STEP 5] Compute number of expected synonymous, missense, etc mutations for every gene ----
 # this is just a standard dNdScv way to compute L matrix - nothing changed here
 message("[3] Estimating global rates...")
@@ -788,7 +776,6 @@ poissout_by_patient <- lapply(names(N_by_sampleID_matrix),function(x){
   return(result)
 })
 
-
 # s_5B: your list poissout_by_patient is actually list of lists. Extract
 # from each element of the list an element named "par". These are the
 # parameters of the model. One entry of a list should look like this:
@@ -802,8 +789,9 @@ par_by_patient <- lapply(poissout_by_patient, function(patient_result) {
   par_table <- patient_result$par
   return(par_table)
 })
+                    
 # s_5C: for each entry of the list, remove rows for which cilow is 0 and 
-# cihigh is Inf. Tip: use function is.finite
+# cihigh is Inf.
 par_by_patient <- lapply(par_by_patient, function(par_table) {
   par_table$mle[par_table$cilow == 0 | is.infinite(par_table$cihigh)] <- 0
   return(par_table)
@@ -832,6 +820,7 @@ par <- par %>%
 parmle <- par$mle
 names(parmle) <- par$name
 
+#########################################################################
 #### continue running dNdScv as usual ####
 genemuts = data.frame(gene_name = sapply(RefCDS, function(x) x$gene_name), 
                       n_syn = NA, n_mis = NA, n_non = NA, n_spl = NA, 
